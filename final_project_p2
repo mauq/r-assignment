@@ -30,7 +30,7 @@ allSampledGames<-merge(sampledHomeGames %>%
     group_by(TEAM_ID_home) %>%
     summarise(home_3pct = mean(FG3_PCT_home)), sampledAwayGames %>%
     group_by(TEAM_ID_away) %>%
-    summarise(away_3pct = mean(FG3_PCT_away)), by.x = "TEAM_ID_home", by.y =            "TEAM_ID_away")
+    summarise(away_3pct = mean(FG3_PCT_away)), by.x = "TEAM_ID_home", by.y = "TEAM_ID_away")
 allSampledGames<-allSampledGames %>% mutate(d=home_3pct - away_3pct)
 ```
 ###Compute Sample Statistics
