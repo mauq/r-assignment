@@ -1,1 +1,57 @@
+###Import large NBA dataset from kaggle: https://www.kaggle.com/datasets/nathanlauga/nba-games?resource=download
+```
+Games<-read.csv("/home/qmpqt/games.csv")
+library(dplyr)
+library(mosaic)
+library(Weighted.Desc.Stat)
+```
+
+###Manipulate large dataset to get desired dataset
+```
+#create vector named teams with all 30 team names in NBA
+teams<-unique(Games[c("TEAM_ID_home")])
+
+#create empty dataframes for sample home games and sampled away games
+sampledAwayGames<-data.frame()
+sampledHomeGames<-data.frame()
+
+#filter big NBA dataset down to most recent season and randomly #sample 10 home games from each team and 10 away games from each team
+for (item in teams$TEAM_ID_home) {
+    temp<-Games %>% filter(SEASON == 2021, TEAM_ID_away == item) %>% dplyr::select(TEAM_ID_away, FG3_PCT_away)
+    sampledAwayGames<-rbind(sampledAwayGames, temp[sample(nrow(temp), 10), ])
+}
+for (item in teams$TEAM_ID_home) {
+    temp<-Games %>% filter(SEASON == 2021, TEAM_ID_home == item) %>% dplyr::select(TEAM_ID_home, FG3_PCT_home)
+    sampledHomeGames<-rbind(sampledHomeGames, temp[sample(nrow(temp), 10), ])
+}
+
+#create 1 dataset for each teams mean 3-point percentage at home and away
+allSampledGames<-merge(sampledHomeGames %>% 
+    group_by(TEAM_ID_home) %>%
+    summarise(home_3pct = mean(FG3_PCT_home)), sampledAwayGames %>%
+    group_by(TEAM_ID_away) %>%
+    summarise(away_3pct = mean(FG3_PCT_away)), by.x = "TEAM_ID_home", by.y =            "TEAM_ID_away")
+allSampledGames<-allSampledGames %>% mutate(d=home_3pct - away_3pct)
+```
+###Compute Sample Statistics
+```
+#calculate avg 3pt percentage for home, away, and the difference between home/away
+df_stats(~home_3pct, allSampledGames, mean)
+df_stats(~away_3pct, allSampledGames, mean)
+df_stats(~d, allSampledGames, mean)
+```
+The above code produces the following results
+```
+#mean 3pt percentage at home
+0.3513467
+
+#mean 3pt percentage away
+0.34859
+
+#mean difference between 3pt percentage home and away
+0.002756667
+```
+
+###Choosing a significance level
+I think an appropriate significance level is 5% because both type I and type II errors could have an equally detrimental effect on playing strategy depending on if the game is home or away. In the case of a type I error, coaching staff may mistakenly fail to accept that 3pt shooting percentage is the same playing home as it is playing away, when it really is. This could result in a game plan of shooting far less 3pt shots, which at a certain percentage, are a large factor in winning. The opposite is also true of type II error, which would be accepting the idea that 3pt shooting percentage is the same playing home and it is away when if fact it is not. This could lead to another detrimental blunder of the coaching staff telling the players to continue to jack up 3pt shots when they would be better of scoring from inside the arc. Both errors cause the team to score less points than they may otherwise however jacking up 3pt shots with a lower than expected percentage will score you less points than shooting more close range shots even though the 3pt percentage is as good home as it is away, so erring towards type I error is a safer bet (alpha = 0.05).
 
